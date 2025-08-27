@@ -2,4 +2,4 @@
 POC PTBA - create Solace wrapper for NodeJS
 
 
-npm install solclientjs
+npm install solclientjs@10.18.2
