@@ -5,6 +5,7 @@ class SolaceClient {
         this.brokerConfig = brokerConfig;
         this.session = null;
         this.messageConsumers = new Map();
+        this.isConnected = false;
         
         // Initialize the Solace API. It's a one-time operation.
         solace.SolclientFactory.init({
@@ -21,18 +22,21 @@ class SolaceClient {
 
             this.session.on(solace.SessionEventCode.UP_NOTICE, () => {
                 console.log('Solace session connected successfully.');
+                this.isConnected = true;
                 resolve();
             });
 
             this.session.on(solace.SessionEventCode.CONNECT_FAILED_ERROR, (event) => {
                 console.error('Connection failed:', event.infoStr);
                 this.session = null;
+                this.isConnected = false;
                 reject(new Error(event.infoStr));
             });
 
             this.session.on(solace.SessionEventCode.DISCONNECTED, () => {
                 console.log('Session disconnected.');
                 this.session = null;
+                this.isConnected = false;
             });
 
             try {
@@ -56,13 +60,9 @@ class SolaceClient {
      * @param {string} message The message payload.
      */
     publish(topicName, message) {
-        // if (!this.session || !this.session.isConnected) {
-        if (!this.session) {
-            throw new Error('Solace session is null.');
+        if (!this.session || !this.isConnected) {
+            throw new Error('Solace session is not connected.');
         }
-        // else if (!this.session.isConnected) {
-        //     throw new Error('Solace session is not connected.');
-        // }
 
         const topic = solace.SolclientFactory.createTopicDestination(topicName);
         const msg = solace.SolclientFactory.createMessage();
@@ -85,7 +85,7 @@ class SolaceClient {
      * @returns {Promise<void>}
      */
     async consume(queueName, messageHandler) {
-        if (!this.session || !this.session.isConnected()) {
+        if (!this.session || !this.isConnected) {
             throw new Error('Solace session is not connected.');
         }
 
