@@ -68,6 +68,7 @@ class SolaceClient {
         const msg = solace.SolclientFactory.createMessage();
         msg.setDestination(topic);
         msg.setBinaryAttachment(message);
+        msg.setDeliveryMode(solace.MessageDeliveryModeType.PERSISTENT);
 
         try {
             this.session.send(msg);
