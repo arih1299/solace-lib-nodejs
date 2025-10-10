@@ -131,9 +131,6 @@ class SolaceClient {
      * @param {string} options.correlationId - Correlation ID for message tracking
      * @param {string} options.applicationMessageId - Application-specific message ID
      * @param {string} options.senderId - Sender identification
-     * @param {string} options.messageType - Application message type
-     * @param {string} options.contentType - MIME content type (e.g., 'application/json')
-     * @param {string} options.contentEncoding - Content encoding (e.g., 'gzip', 'base64')
      * @param {Object} options.userProperties - User-defined properties (key-value pairs)
      * @param {Object} options.replyTo - Reply-to destination (topic or queue)
      * @param {boolean} options.dmqEligible - Dead Message Queue eligibility (default: false)
@@ -141,7 +138,6 @@ class SolaceClient {
      * @param {string} options.className - SDT class name for structured data
      * @param {string} options.deliveryMode - Delivery mode ('DIRECT', 'PERSISTENT', 'NON_PERSISTENT')
      * @param {number} options.expiration - Absolute expiration time (Unix timestamp)
-     * @param {string} options.httpContentType - HTTP content type for REST consumers
      * @param {string} options.partitionKey - Partition key for guaranteed messaging
      * @param {boolean} options.ackImmediately - Acknowledge immediately (default: false)
      * @param {Object} options.destination - Override destination (for advanced routing)
@@ -225,28 +221,6 @@ class SolaceClient {
             // Sender ID
             if (options.senderId) {
                 message.setSenderId(options.senderId);
-            }
-
-            // ============= CONTENT METADATA =============
-
-            // Content Type
-            if (options.contentType) {
-                message.setContentType(options.contentType);
-            }
-
-            // Content Encoding
-            if (options.contentEncoding) {
-                message.setContentEncoding(options.contentEncoding);
-            }
-
-            // HTTP Content Type (for REST consumers)
-            if (options.httpContentType) {
-                message.setHttpContentType(options.httpContentType);
-            }
-
-            // Message Type
-            if (options.messageType) {
-                message.setType(options.messageType);
             }
 
             // ============= ROUTING AND REPLY =============
@@ -351,7 +325,6 @@ class SolaceClient {
                 ttl: options.timeToLive,
                 priority: options.priority,
                 correlationId: options.correlationId,
-                messageType: options.messageType,
                 userProperties: options.userProperties ? Object.keys(options.userProperties) : undefined
             });
 
@@ -437,21 +410,11 @@ class SolaceClient {
             // Binary content
             message.setBinaryAttachment(content);
         } else if (typeof content === 'string') {
-            // String content
-            if (options.contentType === 'application/json' || options.contentType === 'text/json') {
-                message.setSdtContainer(solace.SDTField.create(solace.SDTFieldType.STRING, content));
-            } else {
-                message.setSdtContainer(solace.SDTField.create(solace.SDTFieldType.STRING, content));
-            }
+            message.setSdtContainer(solace.SDTField.create(solace.SDTFieldType.STRING, content));
         } else if (typeof content === 'object' && content !== null) {
             // Object content - serialize to JSON
             const jsonString = JSON.stringify(content);
             message.setSdtContainer(solace.SDTField.create(solace.SDTFieldType.STRING, jsonString));
-            
-            // Set content type if not already specified
-            if (!options.contentType) {
-                message.setContentType('application/json');
-            }
         } else if (typeof content === 'number') {
             // Numeric content
             if (Number.isInteger(content)) {
@@ -526,10 +489,6 @@ class SolaceClient {
             correlationId: message.getCorrelationId(),
             applicationMessageId: message.getApplicationMessageId(),
             senderId: message.getSenderId(),
-            messageType: message.getType(),
-            contentType: message.getContentType(),
-            contentEncoding: message.getContentEncoding(),
-            httpContentType: message.getHttpContentType(),
             deliveryMode: message.getDeliveryMode(),
             priority: message.getPriority(),
             timeToLive: message.getTimeToLive(),
@@ -554,15 +513,6 @@ class SolaceClient {
             } else if (message.getSdtContainer()) {
                 const sdtContainer = message.getSdtContainer();
                 content = sdtContainer.getValue();
-                
-                // Try to parse JSON if content type indicates JSON
-                if (metadata.contentType === 'application/json' || metadata.contentType === 'text/json') {
-                    try {
-                        content = JSON.parse(content);
-                    } catch (e) {
-                        // Keep as string if JSON parsing fails
-                    }
-                }
             } else {
                 content = null;
             }
@@ -950,9 +900,7 @@ class SolaceClient {
         try {
             // Prepare response options based on original request
             const responseOptions = {
-                correlationId: correlationId,
-                messageType: 'RESPONSE',
-                contentType: 'application/json'
+                correlationId: correlationId
             };
 
             // Inherit some properties from the original request if appropriate
