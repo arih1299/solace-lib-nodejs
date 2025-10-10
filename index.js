@@ -129,7 +129,6 @@ class SolaceClient {
      * @param {number} options.timeToLive - Time to live in milliseconds (0 = no expiry)
      * @param {number} options.priority - Message priority (0-255, where 255 is highest)
      * @param {string} options.correlationId - Correlation ID for message tracking
-     * @param {string} options.messageId - Unique message identifier
      * @param {string} options.applicationMessageId - Application-specific message ID
      * @param {string} options.senderId - Sender identification
      * @param {string} options.messageType - Application message type
@@ -221,11 +220,6 @@ class SolaceClient {
             // Application Message ID
             if (options.applicationMessageId) {
                 message.setApplicationMessageId(options.applicationMessageId);
-            }
-
-            // Message ID (auto-generated if not provided)
-            if (options.messageId) {
-                message.setMessageId(options.messageId);
             }
 
             // Sender ID
@@ -529,7 +523,6 @@ class SolaceClient {
      */
     _extractMessageData(message) {
         const metadata = {
-            messageId: message.getMessageId(),
             correlationId: message.getCorrelationId(),
             applicationMessageId: message.getApplicationMessageId(),
             senderId: message.getSenderId(),
